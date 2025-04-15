@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: "input-typeahead"
+  description: "input-typeahead"
+  annotations:
+    github.com/project-slug: zeptonow/input-typeahead
+spec:
+  type: repository
+  lifecycle: experimental
+  owner: "group:default/web"
