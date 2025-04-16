@@ -15,7 +15,7 @@
   },
   "exports": {
     ".": {
-      "types": "./src/package/types/index.ts",
+      "types": "./src/package/index.tsx",
       "import": "./src/package/index.tsx",
       "default": "./src/package/index.tsx"
     }
