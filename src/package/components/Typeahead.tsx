@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { ZeptoTypeAhead, ZeptoTypeAheadOption } from "../types";
+import {
+  ZeptoTypeAhead,
+  ZeptoTypeAheadOption,
+  ZeptoTypeAheadWidgetState,
+} from "../types";
 import { useTypeahead } from "../hooks/useTypeahead";
 import { useOutsideClick } from "../hooks/useOutsideClick";
 import ArrowRounded from "../icons/arrow-rounded";
@@ -16,9 +20,11 @@ import {
   defaultActiveOptionStyle,
 } from "../styles/typeaheadStyles";
 import TypeaheadHeader from "./TypeaheadHeader";
+import ChevronLeft from "../icons/chevron-left";
 
-interface TypeaheadProps extends ZeptoTypeAhead {
+interface TypeaheadProps extends Omit<ZeptoTypeAhead, "onWidgetStateChange"> {
   inputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement>;
+  onWidgetStateChange?: (state: ZeptoTypeAheadWidgetState) => void;
 }
 
 export const Typeahead: React.FC<TypeaheadProps> = ({
@@ -36,6 +42,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
   renderOption,
   renderHeader,
   inputRef,
+  onWidgetStateChange,
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [nestedPath, setNestedPath] = useState<ZeptoTypeAheadOption[]>([]);
@@ -102,17 +109,19 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
             cursorPosition - 1
           );
 
-          // Replace the trigger character and search text with the selected value
-          const newValue =
-            value.slice(0, searchStart) +
-            (option.value || option.label) +
-            value.slice(cursorPosition);
-          input.value = newValue;
+          if (searchStart >= 0) {
+            // Replace only the trigger character and search text with the selected value
+            const newValue =
+              value.slice(0, searchStart) +
+              (option.value || option.label) +
+              value.slice(cursorPosition);
+            input.value = newValue;
 
-          // Set cursor position after the inserted value
-          const newCursorPosition =
-            searchStart + (option.value || option.label).length;
-          input.setSelectionRange(newCursorPosition, newCursorPosition);
+            // Set cursor position after the inserted value
+            const newCursorPosition =
+              searchStart + (option.value || option.label).length;
+            input.setSelectionRange(newCursorPosition, newCursorPosition);
+          }
         }
         onSelect?.(option);
         resetTypeahead();
@@ -218,6 +227,16 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         return;
       }
 
+      // For single mode, only allow the typeahead if trigger is the first non-whitespace character
+      if (activateMode === "once") {
+        const textBeforeTrigger = input.value.substring(0, searchStart).trim();
+        if (textBeforeTrigger.length > 0) {
+          resetTypeahead();
+          setNestedPath([]);
+          return;
+        }
+      }
+
       // Check if there's a space after the trigger character, if so close the typeahead
       if (currentSearch.includes(" ")) {
         resetTypeahead();
@@ -289,6 +308,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
     triggerChar,
     updatePosition,
     inputRef,
+    activateMode,
   ]);
 
   // Track cursor movement and trigger character
@@ -311,9 +331,12 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
           return;
         }
 
-        // For single mode, only activate if trigger character is the first character
-        if (activateMode === "once" && cursorPosition !== 0) {
-          return;
+        // For single mode, only activate if this would be the first non-whitespace character
+        if (activateMode === "once") {
+          const textBeforeCursor = value.substring(0, cursorPosition).trim();
+          if (textBeforeCursor.length > 0) {
+            return;
+          }
         }
 
         // Activate typeahead when trigger character is typed
@@ -374,6 +397,25 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
     };
   }, [currentIsActive, updatePosition, inputRef]);
 
+  // Track widget state changes
+  useEffect(() => {
+    if (!onWidgetStateChange) return;
+
+    const searchInfo = getSearchText(inputRef, triggerChar);
+    onWidgetStateChange({
+      isActive: currentIsActive,
+      currentSearch: searchInfo?.currentSearch || "",
+      selectedOption: currentOptions[activeIndex],
+    });
+  }, [
+    currentIsActive,
+    currentOptions,
+    activeIndex,
+    inputRef,
+    triggerChar,
+    onWidgetStateChange,
+  ]);
+
   // Update keyboard navigation to use just Alt/Option key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -391,16 +433,22 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
           );
           break;
         case "Enter":
-          e.preventDefault();
-          handleSelect(currentOptions[activeIndex]);
+          if (currentIsActive) {
+            e.preventDefault();
+            handleSelect(currentOptions[activeIndex]);
+          }
           break;
         case "Escape":
-          e.preventDefault();
-          resetTypeahead();
+          if (currentIsActive) {
+            e.preventDefault();
+            resetTypeahead();
+          }
           break;
         case "Alt":
-          e.preventDefault();
-          handleBack();
+          if (currentIsActive) {
+            e.preventDefault();
+            handleBack();
+          }
           break;
       }
     };
@@ -518,7 +566,17 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
               style={{ display: "flex", flexDirection: "column", gap: "2px" }}
             >
               <span style={{ color: "#101418" }}>{option.label}</span>
-              {option.description && (
+              {option.children ? (
+                <span
+                  style={{
+                    ...defaultValueStyles,
+                    ...typeAheadOptionValueStyles,
+                  }}
+                >
+                  {option.children.length} options
+                </span>
+              ) : null}
+              {option.description ? (
                 <span
                   style={{
                     ...defaultValueStyles,
@@ -527,9 +585,21 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
                 >
                   {option.description}
                 </span>
-              )}
+              ) : null}
             </div>
-            {option.children && option.children.length > 0 && <ArrowRounded />}
+            {option.children && option.children.length > 0 ? (
+              <span
+                style={{
+                  rotate: "180deg",
+                }}
+              >
+                <ChevronLeft />
+              </span>
+            ) : isActive ? (
+              <span>
+                <ArrowRounded />
+              </span>
+            ) : null}
           </div>
         );
       })}

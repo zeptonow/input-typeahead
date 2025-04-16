@@ -16,6 +16,12 @@ export type ZeptoTypeAheadHeaderProps = {
     nestedPath: ZeptoTypeAheadOption[];
 }
 
+export type ZeptoTypeAheadWidgetState = {
+    isActive: boolean;
+    currentSearch: string;
+    selectedOption?: ZeptoTypeAheadOption;
+}
+
 export type ZeptoTypeAhead = {
     options: ZeptoTypeAheadOption[];
     triggerChar?: string;
@@ -35,4 +41,5 @@ export type ZeptoTypeAhead = {
         onClick: () => void;
     }) => React.ReactNode;
     renderHeader?: (props: ZeptoTypeAheadHeaderProps) => React.ReactNode;
+    onWidgetStateChange?: (state: ZeptoTypeAheadWidgetState) => void;
 }
