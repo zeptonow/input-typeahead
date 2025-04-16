@@ -147,7 +147,7 @@ export const TypeaheadTest: React.FC = () => {
           options={options}
           triggerChar="/"
           position="cursor"
-          activateMode="once"
+          activateMode="single"
         />
       </div>
 

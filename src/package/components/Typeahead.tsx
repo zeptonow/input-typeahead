@@ -5,7 +5,6 @@ import {
   ZeptoTypeAheadOption,
   ZeptoTypeAheadWidgetState,
 } from "../types";
-import { useTypeahead } from "../hooks/useTypeahead";
 import { useOutsideClick } from "../hooks/useOutsideClick";
 import ArrowRounded from "../icons/arrow-rounded";
 import { clearTextAfterTrigger, getSearchText } from "../utils/typeaheadUtils";
@@ -44,23 +43,26 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
   inputRef,
   onWidgetStateChange,
 }) => {
+  // Core state management - formerly in useTypeahead hook
+  const [isActive, setIsActive] = useState(false);
+  const [filteredOptions, setFilteredOptions] = useState<
+    ZeptoTypeAheadOption[]
+  >([]);
+  const [currentOptions, setCurrentOptions] =
+    useState<ZeptoTypeAheadOption[]>(options);
+
+  // Component specific state
   const [activeIndex, setActiveIndex] = useState(0);
   const [nestedPath, setNestedPath] = useState<ZeptoTypeAheadOption[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const portalRef = useRef<HTMLDivElement | null>(null);
 
-  const {
-    isActive: currentIsActive,
-    filteredOptions: currentOptions,
-    setIsActive: setCurrentIsActive,
-    setNestedOptions: setCurrentNestedOptions,
-  } = useTypeahead(
-    inputRef,
-    options,
-    triggerChar,
-    activateMode,
-    searchCallback
-  );
+  // Update currentOptions when options prop changes
+  useEffect(() => {
+    if (nestedPath.length === 0) {
+      setCurrentOptions(options);
+    }
+  }, [options, nestedPath.length]);
 
   // Get caret coordinates using a more reliable method
   const getCaretCoords = useCallback(() => {
@@ -86,17 +88,33 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
   ]);
 
   const resetTypeahead = useCallback(() => {
-    setCurrentIsActive(false);
+    setIsActive(false);
     setActiveIndex(0);
     setNestedPath([]);
-    setCurrentNestedOptions(options);
-  }, [options, setCurrentIsActive, setCurrentNestedOptions]);
+    setCurrentOptions(options);
+    setFilteredOptions([]);
+  }, [options]);
+
+  const filterOptions = useCallback(
+    (value: string, optionsToFilter: ZeptoTypeAheadOption[]) => {
+      if (!value) return optionsToFilter;
+
+      return optionsToFilter.filter((option) => {
+        if (searchCallback) {
+          return searchCallback(option.label, value);
+        }
+        return option.label.toLowerCase().includes(value.toLowerCase());
+      });
+    },
+    [searchCallback]
+  );
 
   const handleSelect = useCallback(
     (option: ZeptoTypeAheadOption) => {
       if (option.children && option.children.length > 0) {
         setNestedPath((prevPath) => [...prevPath, option]);
-        setCurrentNestedOptions(option.children);
+        setCurrentOptions(option.children);
+        setFilteredOptions(option.children);
         setActiveIndex(0);
         clearTextAfterTrigger(inputRef, triggerChar);
       } else {
@@ -127,7 +145,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         resetTypeahead();
       }
     },
-    [inputRef, onSelect, resetTypeahead, setCurrentNestedOptions, triggerChar]
+    [inputRef, onSelect, resetTypeahead, triggerChar]
   );
 
   const handleBack = useCallback(() => {
@@ -137,36 +155,29 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
 
       if (newPath.length === 0) {
         setNestedPath([]);
-        setCurrentNestedOptions(options);
+        setCurrentOptions(options);
+        setFilteredOptions(options);
       } else {
         setNestedPath(newPath);
-        setCurrentNestedOptions(newPath[newPath.length - 1].children || []);
+        const parentChildren = newPath[newPath.length - 1].children || [];
+        setCurrentOptions(parentChildren);
+        setFilteredOptions(parentChildren);
       }
       setActiveIndex(0);
       updatePosition();
       clearTextAfterTrigger(inputRef, triggerChar);
     }
-  }, [
-    nestedPath,
-    options,
-    setCurrentNestedOptions,
-    updatePosition,
-    inputRef,
-    triggerChar,
-  ]);
+  }, [nestedPath, options, updatePosition, inputRef, triggerChar]);
 
-  // Use the new outside click hook
-  useOutsideClick(
-    [containerRef, inputRef],
-    () => resetTypeahead(),
-    currentIsActive
-  );
+  // Use the outside click hook
+  useOutsideClick([containerRef, inputRef], () => resetTypeahead(), isActive);
 
   const handleNestedNavigation = useCallback(
     (option: ZeptoTypeAheadOption) => {
       if (option.children && option.children.length > 0) {
         setNestedPath((prevPath) => [...prevPath, option]);
-        setCurrentNestedOptions(option.children);
+        setCurrentOptions(option.children);
+        setFilteredOptions(option.children);
         setActiveIndex(0);
         updatePosition();
         clearTextAfterTrigger(inputRef, triggerChar);
@@ -174,13 +185,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         handleSelect(option);
       }
     },
-    [
-      handleSelect,
-      setCurrentNestedOptions,
-      updatePosition,
-      inputRef,
-      triggerChar,
-    ]
+    [handleSelect, updatePosition, inputRef, triggerChar]
   );
 
   const handleClose = useCallback(() => {
@@ -203,7 +208,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
 
   // Handle input changes and filtering
   useEffect(() => {
-    if (!inputRef.current || !currentIsActive) return;
+    if (!inputRef.current || !isActive) return;
 
     const input = inputRef.current;
     const handleInput = () => {
@@ -228,7 +233,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
       }
 
       // For single mode, only allow the typeahead if trigger is the first non-whitespace character
-      if (activateMode === "once") {
+      if (activateMode === "single") {
         const textBeforeTrigger = input.value.substring(0, searchStart).trim();
         if (textBeforeTrigger.length > 0) {
           resetTypeahead();
@@ -244,7 +249,9 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         return;
       }
 
-      // Reset to level 1 if we're in nested mode and input changes
+      // Update the searchValue state
+
+      // Filter options based on current path and search text
       if (nestedPath.length > 0) {
         // Only filter current level options when in nested mode
         const filteredNestedOptions =
@@ -257,7 +264,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
               .includes(currentSearch.toLowerCase());
           }) || [];
 
-        setCurrentNestedOptions(filteredNestedOptions);
+        setFilteredOptions(filteredNestedOptions);
 
         // Close typeahead if no results found
         if (filteredNestedOptions.length === 0) {
@@ -272,17 +279,10 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
           filtered = options;
         } else {
           // Filter options based on search text
-          filtered = options.filter((option) => {
-            if (searchCallback) {
-              return searchCallback(option.label, currentSearch);
-            }
-            return option.label
-              .toLowerCase()
-              .includes(currentSearch.toLowerCase());
-          });
+          filtered = filterOptions(currentSearch, options);
         }
 
-        setCurrentNestedOptions(filtered);
+        setFilteredOptions(filtered);
 
         // Close typeahead if no results found
         if (filtered.length === 0) {
@@ -299,16 +299,16 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
     input.addEventListener("input", handleInput);
     return () => input.removeEventListener("input", handleInput);
   }, [
-    currentIsActive,
+    isActive,
     nestedPath,
     options,
     resetTypeahead,
-    searchCallback,
-    setCurrentNestedOptions,
+    filterOptions,
     triggerChar,
     updatePosition,
     inputRef,
     activateMode,
+    searchCallback,
   ]);
 
   // Track cursor movement and trigger character
@@ -332,7 +332,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         }
 
         // For single mode, only activate if this would be the first non-whitespace character
-        if (activateMode === "once") {
+        if (activateMode === "single") {
           const textBeforeCursor = value.substring(0, cursorPosition).trim();
           if (textBeforeCursor.length > 0) {
             return;
@@ -340,8 +340,9 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         }
 
         // Activate typeahead when trigger character is typed
-        setCurrentIsActive(true);
-        setCurrentNestedOptions(options);
+        setIsActive(true);
+        setCurrentOptions(options);
+        setFilteredOptions(options);
 
         // We need to wait for the character to be added to the input before positioning
         setTimeout(() => {
@@ -357,8 +358,6 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
   }, [
     triggerChar,
     options,
-    setCurrentIsActive,
-    setCurrentNestedOptions,
     updatePosition,
     resetTypeahead,
     inputRef,
@@ -367,7 +366,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
 
   // Track cursor movement with click and selection but avoid re-rendering on arrow keys
   useEffect(() => {
-    if (!inputRef.current || !currentIsActive) return;
+    if (!inputRef.current || !isActive) return;
 
     const input = inputRef.current;
 
@@ -395,7 +394,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
       input.removeEventListener("keyup", handleCursorMove);
       input.removeEventListener("mouseup", handleCursorMove);
     };
-  }, [currentIsActive, updatePosition, inputRef]);
+  }, [isActive, updatePosition, inputRef]);
 
   // Track widget state changes
   useEffect(() => {
@@ -403,13 +402,13 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
 
     const searchInfo = getSearchText(inputRef, triggerChar);
     onWidgetStateChange({
-      isActive: currentIsActive,
+      isActive,
       currentSearch: searchInfo?.currentSearch || "",
-      selectedOption: currentOptions[activeIndex],
+      selectedOption: filteredOptions[activeIndex],
     });
   }, [
-    currentIsActive,
-    currentOptions,
+    isActive,
+    filteredOptions,
     activeIndex,
     inputRef,
     triggerChar,
@@ -419,33 +418,34 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
   // Update keyboard navigation to use just Alt/Option key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!currentIsActive || !currentOptions.length) return;
+      if (!isActive || !filteredOptions.length) return;
 
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
-          setActiveIndex((prev) => (prev + 1) % currentOptions.length);
+          setActiveIndex((prev) => (prev + 1) % filteredOptions.length);
           break;
         case "ArrowUp":
           e.preventDefault();
           setActiveIndex(
-            (prev) => (prev - 1 + currentOptions.length) % currentOptions.length
+            (prev) =>
+              (prev - 1 + filteredOptions.length) % filteredOptions.length
           );
           break;
         case "Enter":
-          if (currentIsActive) {
+          if (isActive) {
             e.preventDefault();
-            handleSelect(currentOptions[activeIndex]);
+            handleSelect(filteredOptions[activeIndex]);
           }
           break;
         case "Escape":
-          if (currentIsActive) {
+          if (isActive) {
             e.preventDefault();
             resetTypeahead();
           }
           break;
         case "Alt":
-          if (currentIsActive) {
+          if (isActive) {
             e.preventDefault();
             handleBack();
           }
@@ -456,8 +456,8 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
-    currentIsActive,
-    currentOptions,
+    isActive,
+    filteredOptions,
     activeIndex,
     handleSelect,
     resetTypeahead,
@@ -465,7 +465,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
   ]);
 
   useEffect(() => {
-    if (currentIsActive) {
+    if (isActive) {
       updatePosition();
       window.addEventListener("resize", updatePosition);
       window.addEventListener("scroll", updatePosition);
@@ -474,10 +474,9 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         window.removeEventListener("scroll", updatePosition);
       };
     }
-  }, [currentIsActive, updatePosition]);
+  }, [isActive, updatePosition]);
 
-  if (!currentIsActive || !portalRef.current || !currentOptions.length)
-    return null;
+  if (!isActive || !portalRef.current || !filteredOptions.length) return null;
 
   return createPortal(
     <div
@@ -527,7 +526,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         />
       )}
 
-      {currentOptions.map((option, index) => {
+      {filteredOptions.map((option, index) => {
         const isActive = index === activeIndex;
 
         if (renderOption) {

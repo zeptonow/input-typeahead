@@ -7,7 +7,7 @@ export type ZeptoTypeAheadOption = {
 
 export type ZeptoTypeAheadPosition = 'top' | 'bottom' | 'cursor';
 
-export type ZeptoTypeAheadActivateMode = 'once' | 'multiple';
+export type ZeptoTypeAheadActivateMode = 'single' | 'multiple';
 
 export type ZeptoTypeAheadHeaderProps = {
     onClose: () => void;

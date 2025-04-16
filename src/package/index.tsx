@@ -1,8 +1,10 @@
 export type {
   ZeptoTypeAhead,
   ZeptoTypeAheadOption,
-  TypeaheadOptionProps,
   ZeptoTypeAheadHeaderProps,
+  ZeptoTypeAheadActivateMode,
+  ZeptoTypeAheadPosition,
+  ZeptoTypeAheadWidgetState,
 } from "./types";
 
 import { Typeahead } from "./components/Typeahead";
