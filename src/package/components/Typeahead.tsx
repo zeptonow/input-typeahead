@@ -57,6 +57,17 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const portalRef = useRef<HTMLDivElement | null>(null);
 
+  // Refs map to store references to option elements
+  const optionRefsMapRef = useRef<Map<number, HTMLDivElement>>(new Map());
+
+  // Track whether keyboard navigation is active to prevent mouse hover conflicts
+  const isKeyboardNavActive = useRef(false);
+
+  // Clear refs map when filtered options change
+  useEffect(() => {
+    optionRefsMapRef.current.clear();
+  }, [filteredOptions]);
+
   // Update currentOptions when options prop changes
   useEffect(() => {
     if (nestedPath.length === 0) {
@@ -93,6 +104,8 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
     setNestedPath([]);
     setCurrentOptions(options);
     setFilteredOptions([]);
+    // Reset keyboard navigation state
+    isKeyboardNavActive.current = false;
   }, [options]);
 
   const filterOptions = useCallback(
@@ -191,6 +204,30 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
   const handleClose = useCallback(() => {
     resetTypeahead();
   }, [resetTypeahead]);
+
+  // Helper function to scroll the active option into view using the refs map
+  const scrollActiveOptionIntoView = useCallback((index: number) => {
+    const optionElement = optionRefsMapRef.current.get(index);
+
+    if (optionElement && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const optionRect = optionElement.getBoundingClientRect();
+
+      if (optionRect.bottom > containerRect.bottom) {
+        // Option is below view, scroll down
+        optionElement.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
+      } else if (optionRect.top < containerRect.top) {
+        // Option is above view, scroll up
+        optionElement.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
+      }
+    }
+  }, []);
 
   // Create portal container on mount
   useEffect(() => {
@@ -423,14 +460,28 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
-          setActiveIndex((prev) => (prev + 1) % filteredOptions.length);
+          // Set keyboard navigation as active
+          isKeyboardNavActive.current = true;
+
+          setActiveIndex((prev) => {
+            const newIndex = (prev + 1) % filteredOptions.length;
+            // Scroll the newly active option into view
+            setTimeout(() => scrollActiveOptionIntoView(newIndex), 0);
+            return newIndex;
+          });
           break;
         case "ArrowUp":
           e.preventDefault();
-          setActiveIndex(
-            (prev) =>
-              (prev - 1 + filteredOptions.length) % filteredOptions.length
-          );
+          // Set keyboard navigation as active
+          isKeyboardNavActive.current = true;
+
+          setActiveIndex((prev) => {
+            const newIndex =
+              (prev - 1 + filteredOptions.length) % filteredOptions.length;
+            // Scroll the newly active option into view
+            setTimeout(() => scrollActiveOptionIntoView(newIndex), 0);
+            return newIndex;
+          });
           break;
         case "Enter":
           if (isActive) {
@@ -462,7 +513,18 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
     handleSelect,
     resetTypeahead,
     handleBack,
+    scrollActiveOptionIntoView,
   ]);
+
+  // Reset keyboard navigation flag on mouse movement
+  useEffect(() => {
+    const handleMouseMove = () => {
+      isKeyboardNavActive.current = false;
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
 
   useEffect(() => {
     if (isActive) {
@@ -530,7 +592,8 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         const isActive = index === activeIndex;
 
         if (renderOption) {
-          return renderOption({
+          // If using a custom renderer, we still need to associate a key with the index
+          const customOption = renderOption({
             option,
             isActive,
             onClick: () => {
@@ -541,18 +604,38 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
               }
             },
           });
+
+          // Just add the key to the custom element to avoid type issues
+          return React.isValidElement(customOption)
+            ? React.cloneElement(customOption, {
+                key: `${option.label}-${index}`,
+              })
+            : customOption;
         }
 
         return (
           <div
-            key={option.label}
+            key={`${option.label}-${index}`}
+            ref={(node) => {
+              if (node) {
+                optionRefsMapRef.current.set(index, node);
+              } else {
+                optionRefsMapRef.current.delete(index);
+              }
+            }}
             style={{
               ...defaultOptionStyles,
               ...(isActive ? defaultActiveOptionStyle : {}),
               ...typeAheadOptionStyles,
               ...(isActive ? typeAheadActiveOptionStyle : {}),
             }}
-            onMouseEnter={() => setActiveIndex(index)}
+            onMouseEnter={() => {
+              // Only update active index if keyboard navigation is not active
+              if (!isKeyboardNavActive.current) {
+                setActiveIndex(index);
+                scrollActiveOptionIntoView(index);
+              }
+            }}
             onClick={() => {
               if (option.children && option.children.length > 0) {
                 handleNestedNavigation(option);
