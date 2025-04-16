@@ -1,7 +1,7 @@
 {
   "name": "zepto-typeahead",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -21,7 +21,7 @@
     }
   },
   "files": [
-    "/src/package"
+    "src/package"
   ],
   "devDependencies": {
     "@eslint/js": "^9.21.0",
