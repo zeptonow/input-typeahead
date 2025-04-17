@@ -16,6 +16,11 @@ export const defaultHeaderStyles: CSSProperties = {
     alignItems: "center",
     justifyContent: "space-between",
     borderBottom: "1px solid rgba(0,0,0,0.1)",
+    position: 'sticky',
+    top: 0,
+    left: 0,
+    zIndex: 2,
+    backgroundColor: "white",
 };
 
 export const defaultHeaderTitleStyles: CSSProperties = {
@@ -31,6 +36,11 @@ export const defaultNestedHeaderStyles: CSSProperties = {
     alignItems: "center",
     justifyContent: "space-between",
     borderBottom: "1px solid rgba(0,0,0,0.1)",
+    position: 'sticky',
+    top: 0,
+    left: 0,
+    zIndex: 2,
+    backgroundColor: "white",
 };
 
 export const defaultNestedHeaderTitleStyles: CSSProperties = {

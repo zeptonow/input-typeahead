@@ -688,6 +688,9 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
               ...(isActive ? defaultActiveOptionStyle : {}),
               ...typeAheadOptionStyles,
               ...(isActive ? typeAheadActiveOptionStyle : {}),
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
             }}
             onMouseEnter={() => {
               // Only update active index if keyboard navigation is not active
@@ -705,7 +708,13 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
             }}
           >
             <div
-              style={{ display: "flex", flexDirection: "column", gap: "2px" }}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "2px",
+                width: "90%",
+                flexShrink: 0,
+              }}
             >
               <span style={{ color: "#101418" }}>{option.label}</span>
               {option.children ? (
@@ -729,19 +738,17 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
                 </span>
               ) : null}
             </div>
-            {option.children && option.children.length > 0 ? (
-              <span
-                style={{
-                  rotate: "180deg",
-                }}
-              >
-                <ChevronLeft />
-              </span>
-            ) : isActive ? (
-              <span>
-                <ArrowRounded />
-              </span>
-            ) : null}
+            <div style={{ width: "10%", textAlign: "center", flexShrink: 0 }}>
+              {option.children && option.children.length > 0 ? (
+                <span style={{ rotate: "180deg", display: "inline-block" }}>
+                  <ChevronLeft fill={isActive ? "#9C27B0" : "#667085"} />
+                </span>
+              ) : isActive ? (
+                <span style={{ display: "inline-block" }}>
+                  <ArrowRounded fill={isActive ? "#9C27B0" : "#5A6477"} />
+                </span>
+              ) : null}
+            </div>
           </div>
         );
       })}
