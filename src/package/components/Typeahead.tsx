@@ -131,9 +131,9 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         // Otherwise compare with both label and value
         const labelMatch = option.label
           .toLowerCase()
-          .includes(searchQuery.toLowerCase());
+          .startsWith(searchQuery.toLowerCase());
         const valueMatch = option.value
-          ? option.value.toLowerCase().includes(searchQuery.toLowerCase())
+          ? option.value.toLowerCase().startsWith(searchQuery.toLowerCase())
           : false;
 
         return labelMatch || valueMatch;
