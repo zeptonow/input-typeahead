@@ -98,28 +98,115 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
     getCaretCoords,
   ]);
 
-  const resetTypeahead = useCallback(() => {
-    setIsActive(false);
-    setActiveIndex(0);
-    setNestedPath([]);
-    setCurrentOptions(options);
-    setFilteredOptions([]);
-    // Reset keyboard navigation state
-    isKeyboardNavActive.current = false;
-  }, [options]);
+  const resetTypeahead = useCallback(
+    (preserveNesting = false) => {
+      setIsActive(false);
+      setActiveIndex(0);
+
+      // Only reset nested path if not preserving nesting
+      if (!preserveNesting) {
+        setNestedPath([]);
+        setCurrentOptions(options);
+      }
+
+      setFilteredOptions([]);
+      // Reset keyboard navigation state
+      isKeyboardNavActive.current = false;
+    },
+    [options]
+  );
 
   const filterOptions = useCallback(
-    (value: string, optionsToFilter: ZeptoTypeAheadOption[]) => {
-      if (!value) return optionsToFilter;
+    (searchQuery: string, optionsToFilter: ZeptoTypeAheadOption[]) => {
+      // If search is empty, return all options
+      if (!searchQuery) return optionsToFilter;
 
+      // Apply the filtering logic consistently
       return optionsToFilter.filter((option) => {
+        // Use custom search callback if provided
         if (searchCallback) {
-          return searchCallback(option.label, value);
+          return searchCallback(option.label, searchQuery);
         }
-        return option.label.toLowerCase().includes(value.toLowerCase());
+
+        // Otherwise compare with both label and value
+        const labelMatch = option.label
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+        const valueMatch = option.value
+          ? option.value.toLowerCase().includes(searchQuery.toLowerCase())
+          : false;
+
+        return labelMatch || valueMatch;
       });
     },
     [searchCallback]
+  );
+
+  const handleSearchInput = useCallback(
+    (searchInfo: { searchStart: number; currentSearch: string }) => {
+      if (!inputRef.current) return false; // Return false if unable to process
+
+      const input = inputRef.current;
+      const { searchStart, currentSearch } = searchInfo;
+
+      // Check if the trigger character is standalone (preceded by space or start of line)
+      const isStandaloneTrigger =
+        searchStart === 0 ||
+        (searchStart > 0 && /\s/.test(input.value.charAt(searchStart - 1)));
+
+      if (!isStandaloneTrigger) {
+        return false;
+      }
+
+      // For single mode, only allow the typeahead if trigger is the first non-whitespace character
+      if (activateMode === "single") {
+        const textBeforeTrigger = input.value.substring(0, searchStart).trim();
+        if (textBeforeTrigger.length > 0) {
+          return false;
+        }
+      }
+
+      // Check if there's a space after the trigger character, if so close the typeahead
+      if (currentSearch.includes(" ")) {
+        return false;
+      }
+
+      // Filter options based on current path and search text
+      let newFilteredOptions: ZeptoTypeAheadOption[] = [];
+
+      if (nestedPath.length > 0) {
+        // Get the options at the current nested level
+        const currentNestedOptions =
+          nestedPath[nestedPath.length - 1].children || [];
+
+        // Apply filtering to the current nested level
+        if (currentSearch === "") {
+          // If search is empty (after backspacing), show all options at current level
+          newFilteredOptions = currentNestedOptions;
+        } else {
+          // Filter based on search text
+          newFilteredOptions = filterOptions(
+            currentSearch,
+            currentNestedOptions
+          );
+        }
+      } else {
+        // Not in nested mode, filter the top-level options
+        if (currentSearch === "") {
+          newFilteredOptions = options;
+        } else {
+          newFilteredOptions = filterOptions(currentSearch, options);
+        }
+      }
+
+      // Update filtered options
+      setFilteredOptions(newFilteredOptions);
+
+      // Always return true for nested searches to keep the widget visible and retain the current level
+      // This ensures we never reset back to level 1 during active searching
+      return nestedPath.length > 0 || newFilteredOptions.length > 0;
+    },
+    [filterOptions, inputRef, nestedPath, options, activateMode]
   );
 
   const handleSelect = useCallback(
@@ -245,107 +332,80 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
 
   // Handle input changes and filtering
   useEffect(() => {
-    if (!inputRef.current || !isActive) return;
+    if (!inputRef.current) return;
 
     const input = inputRef.current;
+
     const handleInput = () => {
       const searchInfo = getSearchText(inputRef, triggerChar);
+
+      // If we can't get search info, hide the widget
       if (!searchInfo) {
-        resetTypeahead();
-        setNestedPath([]);
-        return;
-      }
-
-      const { searchStart, currentSearch } = searchInfo;
-
-      // Check if the trigger character is standalone (preceded by space or start of line)
-      const isStandaloneTrigger =
-        searchStart === 0 ||
-        (searchStart > 0 && /\s/.test(input.value.charAt(searchStart - 1)));
-
-      if (!isStandaloneTrigger) {
-        resetTypeahead();
-        setNestedPath([]);
-        return;
-      }
-
-      // For single mode, only allow the typeahead if trigger is the first non-whitespace character
-      if (activateMode === "single") {
-        const textBeforeTrigger = input.value.substring(0, searchStart).trim();
-        if (textBeforeTrigger.length > 0) {
+        if (isActive) {
           resetTypeahead();
-          setNestedPath([]);
-          return;
         }
-      }
-
-      // Check if there's a space after the trigger character, if so close the typeahead
-      if (currentSearch.includes(" ")) {
-        resetTypeahead();
-        setNestedPath([]);
         return;
       }
 
-      // Update the searchValue state
+      // Process the search
+      const shouldShowWidget = handleSearchInput(searchInfo);
 
-      // Filter options based on current path and search text
-      if (nestedPath.length > 0) {
-        // Only filter current level options when in nested mode
-        const filteredNestedOptions =
-          nestedPath[nestedPath.length - 1].children?.filter((option) => {
-            if (searchCallback) {
-              return searchCallback(option.label, currentSearch);
-            }
-            return option.label
-              .toLowerCase()
-              .includes(currentSearch.toLowerCase());
-          }) || [];
+      // If we should show widget or the search is empty, ensure the widget is visible
+      if (shouldShowWidget || searchInfo.currentSearch === "") {
+        if (!isActive) {
+          // If widget was hidden, show it again
+          setIsActive(true);
 
-        setFilteredOptions(filteredNestedOptions);
-
-        // Close typeahead if no results found
-        if (filteredNestedOptions.length === 0) {
-          resetTypeahead();
-          setNestedPath([]);
-          return;
-        }
-      } else {
-        let filtered;
-        // Don't filter if the search text is empty
-        if (currentSearch === "") {
-          filtered = options;
+          // We need to wait for the state to update before positioning
+          setTimeout(() => {
+            updatePosition();
+          }, 0);
         } else {
-          // Filter options based on search text
-          filtered = filterOptions(currentSearch, options);
+          // Widget is already visible, just update position
+          updatePosition();
         }
-
-        setFilteredOptions(filtered);
-
-        // Close typeahead if no results found
-        if (filtered.length === 0) {
-          resetTypeahead();
-          setNestedPath([]);
-          return;
-        }
+      } else if (
+        isActive &&
+        searchInfo.currentSearch !== "" &&
+        nestedPath.length === 0
+      ) {
+        // Hide widget only if:
+        // 1. Widget is active
+        // 2. We have a non-empty query with no matches
+        // 3. We are NOT in a nested level (this is the key change)
+        resetTypeahead();
       }
-
-      // Update position after input changes
-      updatePosition();
     };
 
-    input.addEventListener("input", handleInput);
-    return () => input.removeEventListener("input", handleInput);
+    // Only attach the listener when we need it
+    if (isActive) {
+      input.addEventListener("input", handleInput);
+      return () => input.removeEventListener("input", handleInput);
+    } else {
+      // This creates a more responsive experience by constantly checking for matches
+      // even when the widget is hidden
+      const checkForMatches = () => {
+        const searchInfo = getSearchText(inputRef, triggerChar);
+        if (searchInfo) {
+          const hasMatches = handleSearchInput(searchInfo);
+          if (hasMatches) {
+            setIsActive(true);
+            setTimeout(() => updatePosition(), 0);
+          }
+        }
+      };
+
+      input.addEventListener("input", checkForMatches);
+      return () => input.removeEventListener("input", checkForMatches);
+    }
   }, [
     isActive,
-    nestedPath,
-    options,
-    resetTypeahead,
-    filterOptions,
+    inputRef,
     triggerChar,
     updatePosition,
-    inputRef,
-    activateMode,
-    searchCallback,
+    resetTypeahead,
+    handleSearchInput,
+    nestedPath.length,
   ]);
 
   // Track cursor movement and trigger character
