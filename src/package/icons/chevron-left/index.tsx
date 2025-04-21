@@ -1,4 +1,4 @@
-import { SVGProps } from "../../types/svg";
+import type { SVGProps } from "../../types/svg";
 
 const ChevronLeft = (props: SVGProps) => {
   const { fill = "#667085" } = props;

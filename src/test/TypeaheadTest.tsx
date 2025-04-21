@@ -499,7 +499,6 @@ const CustomHeader = ({
   onClose,
   onBack,
   currentCategory,
-  nestedPath,
 }: ZeptoTypeAheadHeaderProps) => (
   <div style={{ padding: "8px 16px", borderBottom: "1px solid #eee" }}>
     <h3 style={{ margin: 0 }}>Typeahead Menu</h3>

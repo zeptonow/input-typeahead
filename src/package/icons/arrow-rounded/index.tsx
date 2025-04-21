@@ -1,4 +1,4 @@
-import { SVGProps } from "../../types/svg";
+import type { SVGProps } from "../../types/svg";
 
 const ArrowRounded = (props: SVGProps) => {
   const { fill = "#5A6477" } = props;

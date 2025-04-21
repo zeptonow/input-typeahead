@@ -1,11 +1,1 @@
-# dependencies
-node_modules
-
-#environment variable
-.env
-.env.*
-
-# compiled output
-dist
-
-**/.DS_Store
+*

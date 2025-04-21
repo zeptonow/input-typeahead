@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import {
+import type {
   ZeptoTypeAhead,
   ZeptoTypeAheadOption,
   ZeptoTypeAheadWidgetState,
@@ -113,7 +113,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
       // Reset keyboard navigation state
       isKeyboardNavActive.current = false;
     },
-    [options]
+    [options],
   );
 
   const filterOptions = useCallback(
@@ -139,7 +139,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         return labelMatch || valueMatch;
       });
     },
-    [searchCallback]
+    [searchCallback],
   );
 
   const handleSearchInput = useCallback(
@@ -177,7 +177,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
       if (nestedPath.length > 0) {
         // Get the options at the current nested level
         const currentNestedOptions =
-          nestedPath[nestedPath.length - 1].children || [];
+          nestedPath?.[nestedPath.length - 1]?.children || [];
 
         // Apply filtering to the current nested level
         if (currentSearch === "") {
@@ -187,7 +187,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
           // Filter based on search text
           newFilteredOptions = filterOptions(
             currentSearch,
-            currentNestedOptions
+            currentNestedOptions,
           );
         }
       } else {
@@ -206,7 +206,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
       // This ensures we never reset back to level 1 during active searching
       return nestedPath.length > 0 || newFilteredOptions.length > 0;
     },
-    [filterOptions, inputRef, nestedPath, options, activateMode]
+    [filterOptions, inputRef, nestedPath, options, activateMode],
   );
 
   const handleSelect = useCallback(
@@ -224,7 +224,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
           const cursorPosition = input.selectionStart || 0;
           const searchStart = value.lastIndexOf(
             triggerChar,
-            cursorPosition - 1
+            cursorPosition - 1,
           );
 
           if (searchStart >= 0) {
@@ -245,7 +245,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         resetTypeahead();
       }
     },
-    [inputRef, onSelect, resetTypeahead, triggerChar]
+    [inputRef, onSelect, resetTypeahead, triggerChar],
   );
 
   const handleBack = useCallback(() => {
@@ -259,7 +259,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         setFilteredOptions(options);
       } else {
         setNestedPath(newPath);
-        const parentChildren = newPath[newPath.length - 1].children || [];
+        const parentChildren = newPath?.[newPath.length - 1]?.children || [];
         setCurrentOptions(parentChildren);
         setFilteredOptions(parentChildren);
       }
@@ -285,7 +285,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         handleSelect(option);
       }
     },
-    [handleSelect, updatePosition, inputRef, triggerChar]
+    [handleSelect, updatePosition, inputRef, triggerChar],
   );
 
   const handleClose = useCallback(() => {
@@ -546,7 +546,9 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         case "Enter":
           if (isActive) {
             e.preventDefault();
-            handleSelect(filteredOptions[activeIndex]);
+            handleSelect(
+              filteredOptions?.[activeIndex] as ZeptoTypeAheadOption,
+            );
           }
           break;
         case "Escape":
@@ -753,6 +755,6 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         );
       })}
     </div>,
-    portalRef.current
+    portalRef.current,
   );
 };

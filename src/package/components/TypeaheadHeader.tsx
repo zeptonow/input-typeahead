@@ -1,4 +1,4 @@
-import { ZeptoTypeAheadHeaderProps } from "../types";
+import type { ZeptoTypeAheadHeaderProps } from "../types";
 
 import {
   defaultNestedHeaderStyles,
