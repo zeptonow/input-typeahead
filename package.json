@@ -23,14 +23,10 @@
     "preview": "vite preview",
     "lint-staged": "lint-staged",
     "husky-install": "husky install",
-    "prepare": "husky",
+    "prepare": "husky && tsup",
     "commitlint": "commitlint",
     "build:package": "tsup",
     "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
   },
   "peerDependencies": {
     "@types/react": "*",
@@ -107,6 +103,8 @@
     "tsup": "^8.4.0",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }
