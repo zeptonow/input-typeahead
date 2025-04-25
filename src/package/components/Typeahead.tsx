@@ -6,20 +6,14 @@ import type {
   ZeptoTypeAheadWidgetState,
 } from "../types";
 import { useOutsideClick } from "../hooks/useOutsideClick";
-import ArrowRounded from "../icons/arrow-rounded";
 import { clearTextAfterTrigger, getSearchText } from "../utils/typeaheadUtils";
 import {
   getCaretCoordinates,
   updatePosition as updatePositionUtil,
 } from "../utils/positionUtils";
-import {
-  defaultContainerStyles,
-  defaultOptionStyles,
-  defaultValueStyles,
-  defaultActiveOptionStyle,
-} from "../styles/typeaheadStyles";
+import { defaultContainerStyles } from "../styles/typeaheadStyles";
 import TypeaheadHeader from "./TypeaheadHeader";
-import ChevronLeft from "../icons/chevron-left";
+import { TypeaheadOption } from "./TypeaheadOption";
 
 interface TypeaheadProps extends Omit<ZeptoTypeAhead, "onWidgetStateChange"> {
   inputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement>;
@@ -125,7 +119,7 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
       return optionsToFilter.filter((option) => {
         // Use custom search callback if provided
         if (searchCallback) {
-          return searchCallback(option.label, searchQuery);
+          return searchCallback(option, searchQuery);
         }
 
         // Otherwise compare with both label and value
@@ -304,13 +298,13 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         // Option is below view, scroll down
         optionElement.scrollIntoView({
           behavior: "smooth",
-          block: "nearest",
+          block: "end",
         });
       } else if (optionRect.top < containerRect.top) {
         // Option is above view, scroll up
         optionElement.scrollIntoView({
           behavior: "smooth",
-          block: "nearest",
+          block: "end",
         });
       }
     }
@@ -606,17 +600,9 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
     <div
       ref={containerRef}
       style={{
-        position: "fixed",
-        zIndex: 9999,
-        visibility: "hidden",
         maxHeight: `${maxVisibleOptions * 36}px`,
-        overflow: "auto",
         ...defaultContainerStyles,
-        width: "360px",
         ...typeAheadContainerStyles,
-        animation: "typeaheadFadeIn 0.18s ease-out forwards",
-        transition: "all 0.18s ease-out",
-        transform: "translateY(0)",
       }}
     >
       <style>
@@ -685,15 +671,6 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
                 optionRefsMapRef.current.delete(index);
               }
             }}
-            style={{
-              ...defaultOptionStyles,
-              ...(isActive ? defaultActiveOptionStyle : {}),
-              ...typeAheadOptionStyles,
-              ...(isActive ? typeAheadActiveOptionStyle : {}),
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
             onMouseEnter={() => {
               // Only update active index if keyboard navigation is not active
               if (!isKeyboardNavActive.current) {
@@ -701,56 +678,21 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
                 scrollActiveOptionIntoView(index);
               }
             }}
-            onClick={() => {
-              if (option.children && option.children.length > 0) {
-                handleNestedNavigation(option);
-              } else {
-                handleSelect(option);
-              }
-            }}
           >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "2px",
-                width: "90%",
-                flexShrink: 0,
+            <TypeaheadOption
+              option={option}
+              isActive={isActive}
+              customStyles={typeAheadOptionStyles}
+              activeStyles={typeAheadActiveOptionStyle}
+              valueStyles={typeAheadOptionValueStyles}
+              onClick={() => {
+                if (option.children && option.children.length > 0) {
+                  handleNestedNavigation(option);
+                } else {
+                  handleSelect(option);
+                }
               }}
-            >
-              <span style={{ color: "#101418" }}>{option.label}</span>
-              {option.children ? (
-                <span
-                  style={{
-                    ...defaultValueStyles,
-                    ...typeAheadOptionValueStyles,
-                  }}
-                >
-                  {option.children.length} options
-                </span>
-              ) : null}
-              {option.description ? (
-                <span
-                  style={{
-                    ...defaultValueStyles,
-                    ...typeAheadOptionValueStyles,
-                  }}
-                >
-                  {option.description}
-                </span>
-              ) : null}
-            </div>
-            <div style={{ width: "10%", textAlign: "center", flexShrink: 0 }}>
-              {option.children && option.children.length > 0 ? (
-                <span style={{ rotate: "180deg", display: "inline-block" }}>
-                  <ChevronLeft fill={isActive ? "#9C27B0" : "#667085"} />
-                </span>
-              ) : isActive ? (
-                <span style={{ display: "inline-block" }}>
-                  <ArrowRounded fill={isActive ? "#9C27B0" : "#5A6477"} />
-                </span>
-              ) : null}
-            </div>
+            />
           </div>
         );
       })}
