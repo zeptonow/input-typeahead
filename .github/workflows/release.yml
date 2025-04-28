@@ -26,8 +26,35 @@ jobs:
       - name: Build
         run: pnpm build:package
 
-  publish:
+  dry-run:
     needs: build
+    runs-on: arc-runner-set
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          registry-url: "https://registry.npmjs.org/"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Semantic release dry run
+        run: pnpx semantic-release --dry-run
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish:
+    needs: [build, dry-run]
     runs-on: arc-runner-set
     steps:
       - name: Checkout
