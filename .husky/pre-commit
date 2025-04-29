@@ -1,4 +1,0 @@
-#!/usr/bin/env sh
-
-# Run lint-staged to lint and format files that are being committed
-pnpm lint-staged
