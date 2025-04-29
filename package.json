@@ -1,6 +1,6 @@
 {
   "name": "@zeptonow/input-typeahead",
-  "private": true,
+  "private": false,
   "description": "An input typeahead component for react applications, convert any input into a typeahead with a dropdown of suggestions.",
   "author": {
     "name": "ZeptoNow",

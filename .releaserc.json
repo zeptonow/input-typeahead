@@ -1,5 +1,5 @@
 {
-  "branches": ["main", "feature/input-typeahead"],
+  "branches": ["main"],
   "repositoryUrl": "https://github.com/zeptonow/input-typeahead.git",
   "plugins": [
     "@semantic-release/commit-analyzer",
