@@ -7,6 +7,11 @@ on:
 jobs:
   build:
     runs-on: arc-runner-set
+    permissions:
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      id-token: write # to enable use of OIDC for npm provenance
     steps:
       - uses: actions/checkout@v4
       - name: Install pnpm
@@ -56,6 +61,11 @@ jobs:
   publish:
     needs: [build, dry-run]
     runs-on: arc-runner-set
+    permissions:
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      id-token: write # to enable use of OIDC for npm provenance
     steps:
       - name: Checkout
         uses: actions/checkout@v4

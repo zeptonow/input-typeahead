@@ -12,7 +12,7 @@ export type ZeptoTypeAheadActivateMode = "single" | "multiple";
 export type ZeptoTypeAheadHeaderProps = {
   onClose: () => void;
   onBack: () => void;
-  currentCategory?: ZeptoTypeAheadOption;
+  currentLevel?: ZeptoTypeAheadOption;
   nestedPath: ZeptoTypeAheadOption[];
 };
 

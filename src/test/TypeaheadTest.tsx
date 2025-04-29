@@ -498,13 +498,13 @@ const CustomOption: React.FC<ZeptoTypeAhead> = ({
 const CustomHeader = ({
   onClose,
   onBack,
-  currentCategory,
+  currentLevel,
 }: ZeptoTypeAheadHeaderProps) => (
   <div style={{ padding: "8px 16px", borderBottom: "1px solid #eee" }}>
     <h3 style={{ margin: 0 }}>Typeahead Menu</h3>
     <button onClick={onClose}>Close</button>
     <button onClick={onBack}>Back</button>
-    <h3 style={{ margin: 0 }}>{currentCategory?.label}</h3>
+    <h3 style={{ margin: 0 }}>{currentLevel?.label}</h3>
   </div>
 );
 

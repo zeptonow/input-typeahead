@@ -12,7 +12,7 @@ import Close from "../icons/close";
 const TypeaheadHeader: React.FC<ZeptoTypeAheadHeaderProps> = ({
   onClose,
   onBack,
-  currentCategory,
+  currentLevel,
   nestedPath,
 }) => {
   if (nestedPath.length > 0) {
@@ -33,7 +33,7 @@ const TypeaheadHeader: React.FC<ZeptoTypeAheadHeaderProps> = ({
             <ChevronLeft />
           </button>
           <h3 style={defaultNestedHeaderTitleStyles}>
-            {currentCategory?.label || "Back"}
+            {currentLevel?.label || "Back"}
           </h3>
         </div>
       </div>

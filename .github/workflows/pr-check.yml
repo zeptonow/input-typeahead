@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  release:
+  lint_and_build:
     runs-on: qa-arc-runner-set
     steps:
       - name: Checkout repository

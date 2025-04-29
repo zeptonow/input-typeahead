@@ -166,7 +166,7 @@ type ZeptoTypeAheadActivateMode = "single" | "multiple";
 type ZeptoTypeAheadHeaderProps = {
   onClose: () => void;
   onBack: () => void;
-  currentCategory?: ZeptoTypeAheadOption;
+  currentLevel?: ZeptoTypeAheadOption;
   nestedPath: ZeptoTypeAheadOption[];
 };
 

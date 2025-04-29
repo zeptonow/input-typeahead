@@ -624,14 +624,14 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         renderHeader({
           onClose: handleClose,
           onBack: handleBack,
-          currentCategory: nestedPath[nestedPath.length - 1],
+          currentLevel: nestedPath[nestedPath.length - 1],
           nestedPath,
         })
       ) : (
         <TypeaheadHeader
           onClose={handleClose}
           onBack={handleBack}
-          currentCategory={nestedPath[nestedPath.length - 1]}
+          currentLevel={nestedPath[nestedPath.length - 1]}
           nestedPath={nestedPath}
         />
       )}
