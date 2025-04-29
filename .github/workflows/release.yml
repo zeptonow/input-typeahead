@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: arc-runner-set
+    runs-on: ubuntu-latest
     permissions:
       contents: write # to be able to publish a GitHub release
       issues: write # to be able to comment on released issues

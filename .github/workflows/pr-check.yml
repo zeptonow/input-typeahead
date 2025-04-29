@@ -7,7 +7,7 @@ on:
 
 jobs:
   lint_and_build:
-    runs-on: qa-arc-runner-set
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
