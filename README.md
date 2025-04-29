@@ -1,7 +1,6 @@
 # @zeptonow/input-typeahead
 
-![Input Typeahead Demo](./docs/assets/input-typeahead-demo.png)
-_Note: Replace with actual screenshot once available_
+![Input Typeahead Demo](./public/readme/preview-2.png)
 
 [![npm version](https://img.shields.io/npm/v/@zeptonow/input-typeahead.svg)](https://www.npmjs.com/package/@zeptonow/input-typeahead)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -166,7 +165,7 @@ type ZeptoTypeAheadActivateMode = "single" | "multiple";
 type ZeptoTypeAheadHeaderProps = {
   onClose: () => void;
   onBack: () => void;
-  currentLevel?: ZeptoTypeAheadOption;
+  currentCategory?: ZeptoTypeAheadOption;
   nestedPath: ZeptoTypeAheadOption[];
 };
 
