@@ -106,8 +106,13 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
       setFilteredOptions([]);
       // Reset keyboard navigation state
       isKeyboardNavActive.current = false;
+
+      // Focus the input after reset
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
     },
-    [options],
+    [options, inputRef],
   );
 
   const filterOptions = useCallback(
@@ -233,6 +238,9 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
             const newCursorPosition =
               searchStart + (option.value || option.label).length;
             input.setSelectionRange(newCursorPosition, newCursorPosition);
+
+            // Focus the input after selection
+            input.focus();
           }
         }
         onSelect?.(option);
