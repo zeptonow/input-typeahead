@@ -272,7 +272,17 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
   }, [nestedPath, options, updatePosition, inputRef, triggerChar]);
 
   // Use the outside click hook
-  useOutsideClick([containerRef, inputRef], () => resetTypeahead(), isActive);
+  useOutsideClick(
+    [containerRef, inputRef],
+    () => {
+      resetTypeahead();
+      // Ensure input maintains focus after clicking outside
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    },
+    isActive,
+  );
 
   const handleNestedNavigation = useCallback(
     (option: ZeptoTypeAheadOption) => {
@@ -283,6 +293,10 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
         setActiveIndex(0);
         updatePosition();
         clearTextAfterTrigger(inputRef, triggerChar);
+        // Ensure input maintains focus after mouse interaction
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
       } else {
         handleSelect(option);
       }
@@ -292,7 +306,11 @@ export const Typeahead: React.FC<TypeaheadProps> = ({
 
   const handleClose = useCallback(() => {
     resetTypeahead();
-  }, [resetTypeahead]);
+    // Ensure input maintains focus after closing
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [resetTypeahead, inputRef]);
 
   // Helper function to scroll the active option into view using the refs map
   const scrollActiveOptionIntoView = useCallback((index: number) => {
