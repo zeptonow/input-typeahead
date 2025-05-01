@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: qa-arc-runner-set
     permissions:
       contents: write # to be able to publish a GitHub release
       issues: write # to be able to comment on released issues
@@ -36,7 +36,7 @@ jobs:
 
   dry-run:
     needs: build
-    runs-on: arc-runner-set
+    runs-on: qa-arc-runner-set
     permissions:
       contents: write # to be able to publish a GitHub release
       issues: write # to be able to comment on released issues
@@ -68,13 +68,13 @@ jobs:
       - name: Semantic release dry run
         run: pnpx semantic-release --dry-run --debug
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_PUBLISH }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [build, dry-run]
-    runs-on: arc-runner-set
+    runs-on: qa-arc-runner-set
     permissions:
       contents: write # to be able to publish a GitHub release
       issues: write # to be able to comment on released issues
