@@ -63,7 +63,7 @@ jobs:
       - name: Semantic release dry run
         run: pnpx semantic-release --dry-run --debug
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_PUBLISH }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish:
