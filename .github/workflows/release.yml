@@ -42,9 +42,14 @@ jobs:
       issues: write # to be able to comment on released issues
       pull-requests: write # to be able to comment on released pull requests
       id-token: write # to enable use of OIDC for npm provenance
+      packages: write # for potential package publishing
+      
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Important for semantic-release to work properly
+          persist-credentials: false  # Don't persist the default token
 
       - name: Use Node
         uses: actions/setup-node@v4
@@ -63,7 +68,7 @@ jobs:
       - name: Semantic release dry run
         run: pnpx semantic-release --dry-run --debug
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_PUBLISH }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish:
