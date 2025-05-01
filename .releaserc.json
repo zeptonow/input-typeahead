@@ -1,6 +1,6 @@
 {
   "branches": ["main"],
-  "repositoryUrl": "git@github.com:zeptonow/input-typeahead.git",
+  "repositoryUrl": "https://github.com/zeptonow/input-typeahead.git",
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
