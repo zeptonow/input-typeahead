@@ -55,7 +55,7 @@ jobs:
         uses: tibdex/github-app-token@v2
         with:
           app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          private_key: ${{ secrets.DEPLOY_KEY }}
   
       # Configure Git with the GitHub App token
       - name: Configure Git
@@ -81,7 +81,7 @@ jobs:
       - name: Semantic release dry run
         run: pnpx semantic-release --dry-run --debug
         env:
-          # GITHUB_TOKEN: ${{ secrets.GH_TOKEN_PUBLISH }}
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish:
